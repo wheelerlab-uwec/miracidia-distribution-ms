@@ -24,8 +24,8 @@ To receive a C in this class, the following are required:
       4. counting,
       5. PCA clustering,and
       6. differential expression.  
-    > [!TIP]  
-    > This means that you should include Markdown explaining and evaluating logs and QC metrics, as well as your thought process behind each command and argument.
+  > [!TIP]  
+  > This means that you should include Markdown explaining and evaluating logs and QC metrics, as well as your thought process behind each command and argument.
 2. An `environment.yaml` file that includes the specifications for generating a conda environment to use as the kernel for the IPython notebook.  
 3. A single MultiQC report that includes QC from each command in the notebook.  
 4. All of the associated data. Some of it may be too large to put on GitHub, but the count matrices should be included at the very least.  
