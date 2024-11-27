@@ -1,0 +1,196 @@
+# configfile: "config.yaml"
+
+import pandas as pd
+
+sample_table = pd.read_csv("samples.tsv", sep="\t", dtype=str)
+# print(sample_table)
+
+# append all accession number to a list
+SAMPLES = []
+
+for i in sample_table['sample']:
+    SAMPLES.append(i)
+
+rule all:
+    input: "reports/multiqc_report.html"
+    output: "reports/snakemake-report.html"
+    shell: "snakemake --report {output}"
+
+rule cp_fq:
+    input: "/data/classes/2024/fall/biol343/course_files/20240923_LH00283_0144_B22NMVKLT3/{sample}.fastq.gz"
+    output: "fastq/pe/{sample}.fastq.gz"
+    shell: "cp {input} {output}"
+
+rule fastqc_raw:
+    input: "fastq/pe/{accession}.fastq.gz"
+    output:
+        zip = "fastq/pe/qc/{accession}_fastqc.zip",
+        html = temp("fastq/pe/qc/{accession}_fastqc.html")
+    params: outdir = "fastq/pe/qc"
+    threads: 16
+    priority: 10
+    shell: "fastqc -t {threads} {input} -o {params.outdir}"
+
+rule trim_fastq:
+    input: "fastq/pe/{accession}.fastq.gz"
+    output: "fastq/trimmed/{accession}.fastq.gz"
+    threads: 16
+    shell: "cutadapt -j {threads} -m 20 --poly-a --nextseq-trim=10 -o {output} {input}"
+
+rule fastqc_trim:
+    input: "fastq/trimmed/{accession}.fastq.gz"
+    output:
+        zip = "fastq/trimmed/qc/{accession}_fastqc.zip",
+        html = temp("fastq/trimmed/qc/{accession}_fastqc.html")
+    params: outdir = "fastq/trimmed/qc"
+    threads: 16
+    priority: 20
+    shell:"fastqc -t {threads} {input} -o {params.outdir}"
+
+rule get_genome:
+    output: temp("genome/genome.fa.gz")
+    shell: "wget -O {output} https://ftp.ebi.ac.uk/pub/databases/wormbase/parasite/releases/WBPS19/species/schistosoma_mansoni/PRJEA36577/schistosoma_mansoni.PRJEA36577.WBPS19.genomic.fa.gz "
+
+rule decompress_genome:
+    input: "genome/genome.fa.gz"
+    output: "genome/genome.fa"
+    shell: "gzip -d {input}"
+
+rule get_gtf:
+    output: temp("genome/annotations.gtf.gz")
+    shell: "wget -O {output} https://ftp.ebi.ac.uk/pub/databases/wormbase/parasite/releases/WBPS19/species/schistosoma_mansoni/PRJEA36577/schistosoma_mansoni.PRJEA36577.WBPS19.canonical_geneset.gtf.gz"
+
+rule decompress_gtf:
+    input: "genome/annotations.gtf.gz"
+    output: "genome/annotations.gtf"
+    shell: "gzip -d {input}"
+
+# rule star_sa:
+#     input:
+#         ref = "genome/genome.fa",
+#         gtf = "genome/annotations.gtf"
+#     output: 
+#         directory("genome/star/")
+#     threads: 16
+#     shell:
+#         """
+#         STAR \
+#         --runThreadN {threads} \
+#         --runMode genomeGenerate \
+#         --genomeDir {output} \
+#         --genomeFastaFiles {input.ref} \
+#         --sjdbGTFfile {input.gtf} \
+#         --sjdbOverhang 68 \
+#         --genomeSAindexNbases 13
+#         """
+
+# rule star_first_align:
+#     input: 
+#         reads = "fastq/trimmed/{accession}.fastq.gz",
+#         genome = "genome/star/"
+#     output: 
+#         bam = temp("alignment/star_one/{accession}/Aligned.sortedByCoord.out.bam"),
+#         logs = temp("alignment/star_one/{accession}/Log.final.out"),
+#         junctions = "alignment/star_one/{accession}/SJ.out.tab"
+#     params:
+#         prefix = "alignment/star_one/{accession}/"
+#     threads: 16
+#     shell:
+#         """
+#         STAR \
+#         --runThreadN {threads} \
+#         --runMode alignReads \
+#         --genomeDir {input.genome} \
+#         --readFilesIn {input.reads} \
+#         --readFilesCommand zcat \
+#         --outSAMtype BAM SortedByCoordinate \
+#         --outSAMunmapped Within \
+#         --outFileNamePrefix {params.prefix} 
+#         """
+
+# rule star_second_align:
+#     input: 
+#         reads = "fastq/trimmed/{accession}.fastq.gz",
+#         genome = "genome/star/",
+#         junctions = expand("alignment/star_one/{accession}/SJ.out.tab", accession=ACCESSIONS)
+#     output: 
+#         bam = temp("alignment/star_two/{accession}/Aligned.sortedByCoord.out.bam"),
+#         log = "alignment/star_two/{accession}/Log.final.out"
+#     params:
+#         prefix = "alignment/star_two/{accession}/",
+#         junctions = ' '.join(expand("alignment/star_one/{accession}/", accession=ACCESSIONS)),
+#         rg = "{accession}"
+#     threads: 16
+#     shell:
+#         """
+#         STAR \
+#         --runThreadN {threads} \
+#         --runMode alignReads \
+#         --genomeDir {input.genome} \
+#         --readFilesIn {input.reads} \
+#         --readFilesCommand zcat \
+#         --outSAMtype BAM SortedByCoordinate \
+#         --outSAMunmapped Within \
+#         --outFileNamePrefix {params.prefix} \
+#         --outSAMattributes NH HI AS nM RG \
+#         --outSAMattrRGline ID:{params.rg} SM:{params.rg} \
+#         --sjdbFileChrStartEnd {params.junctions}
+#         """
+
+# rule qualimap_bam:
+#     input:
+#         bam = "alignment/star_two/{accession}/Aligned.sortedByCoord.out.bam",
+#         gtf = "genome/annotations.gtf"
+#     output: directory("qualimap/star/bam/{accession}")
+#     threads: 16
+#     shell: "qualimap bamqc -nt {threads} -outdir {output} -bam {input.bam} --feature-file {input.gtf} -p strand-specific-forward"
+
+# rule qualimap_rnaseq:
+#     input:
+#         bam = "alignment/star_two/{accession}/Aligned.sortedByCoord.out.bam",
+#         gtf = "genome/annotations.gtf"
+#     output: directory("qualimap/star/rnaseq/{accession}")
+#     shell: "qualimap rnaseq -outdir {output} -bam {input.bam} -gtf {input.gtf} -p strand-specific-forward"
+
+# rule dedup:
+#     input: "alignment/star_two/{accession}/Aligned.sortedByCoord.out.bam"
+#     output:
+#         dedup = "dedup/star/{accession}.bam",
+#         log = "logs/picard/{accession}.log"
+#     shell: "picard MarkDuplicates -I {input} -M {output.log} -O {output.dedup} --VALIDATION_STRINGENCY SILENT"
+
+# rule count:
+#     input: 
+#         bam = expand("dedup/star/{accession}.bam", accession=ACCESSIONS),
+#         gtf = "genome/annotations.gtf"
+#     output: 
+#         "counts/star/counts.tsv",
+#         "counts/star/counts.tsv.summary"
+#     params: outfile = "counts/star/counts.tsv"
+#     threads: 16
+#     shell:
+#         """
+#         featureCounts \
+#         {input.bam} \
+#         -T {threads} \
+#         -s 1 \
+#         --ignoreDup \
+#         -M \
+#         --fraction \
+#         -a {input.gtf} \
+#         -o {params.outfile} 
+#         """
+
+rule multiqc:
+    input: 
+        expand("fastq/pe/qc/{sample}_fastqc.zip", sample=SAMPLES),
+        # expand("fastq/trimmed/qc/{sample}_fastqc.zip", sample=SAMPLES),
+        # expand("qualimap/star/bam/{accession}", accession=ACCESSIONS),
+        # expand("qualimap/star/rnaseq/{accession}", accession=ACCESSIONS),
+        # expand("logs/picard/{accession}.log", accession=ACCESSIONS),
+        # expand("alignment/star_two/{accession}/Log.final.out", accession=ACCESSIONS),
+        # "counts/star/counts.tsv.summary"
+    output: "reports/multiqc_report.html"
+    params: outdir = "reports/"
+    threads: 16
+    shell: "multiqc --outdir {params.outdir} --force -d ."

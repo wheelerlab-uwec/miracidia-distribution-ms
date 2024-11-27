@@ -1,3 +1,8 @@
+pipeline/fastq/
+pipeline/.snakemake/
+pipeline/logs/
+pipeline/reports/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

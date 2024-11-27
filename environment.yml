@@ -1,0 +1,15 @@
+name: mira-rnaseq
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - fastqc
+  - snakemake=8.14.0
+  - snakemake-interface-common=1.17.2
+  - snakemake-interface-executor-plugins
+  - snakemake-interface-report-plugins
+  - snakemake-interface-storage-plugins
+  - snakemake-minimal=8.14.0
+  - snakemake-executor-plugin-cluster-generic=1.0.9
+  - multiqc=1.25.2
