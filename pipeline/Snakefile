@@ -213,4 +213,4 @@ rule diffexp:
     output: "plots/pca.pdf",
             "plots/pca.png",
             "plots/volcano.png"
-    shell: "Rscript {input}"
+    shell: "Rscript diffexp.R {input}"

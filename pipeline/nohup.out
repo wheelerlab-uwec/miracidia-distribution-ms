@@ -170,3 +170,101 @@ Exiting because a job execution failed. Look above for error message
 Complete log: .snakemake/log/2024-12-11T164906.459559.snakemake.log
 WorkflowError:
 At least one job did not complete successfully.
+Using profile snakemake-profile/ for setting default command line arguments.
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided remote nodes: 500
+Job stats:
+job        count
+-------  -------
+all            1
+diffexp        1
+total          2
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Jan 17 10:50:46 2025]
+rule diffexp:
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    jobid: 104
+    reason: Missing output files: plots/volcano.png, plots/pca.pdf, plots/pca.png; Updated input files: counts/star/counts.tsv
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+Rscript counts/star/counts.tsv
+Submitted job 104 with external jobid '114708'.
+[Fri Jan 17 10:50:56 2025]
+Error in rule diffexp:
+    message: For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 104
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    shell:
+        Rscript counts/star/counts.tsv
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    external_jobid: 114708
+
+Trying to restart job 104.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Jan 17 10:50:56 2025]
+rule diffexp:
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    jobid: 104
+    reason: Missing output files: plots/volcano.png, plots/pca.pdf, plots/pca.png; Updated input files: counts/star/counts.tsv
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+Rscript counts/star/counts.tsv
+Submitted job 104 with external jobid '114709'.
+Terminating processes on user request, this might take some time.
+No --cluster-cancel given. Will exit after finishing currently running jobs.
+Complete log: .snakemake/log/2025-01-17T105046.419308.snakemake.log
+WorkflowError:
+At least one job did not complete successfully.
+Using profile snakemake-profile/ for setting default command line arguments.
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided remote nodes: 500
+Job stats:
+job        count
+-------  -------
+all            1
+diffexp        1
+total          2
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Jan 17 10:58:15 2025]
+rule diffexp:
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    jobid: 104
+    reason: Missing output files: plots/pca.pdf, plots/volcano.png, plots/pca.png; Updated input files: counts/star/counts.tsv
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+Rscript diffexp.R counts/star/counts.tsv
+Submitted job 104 with external jobid '114711'.
+[Fri Jan 17 10:58:45 2025]
+Finished job 104.
+1 of 2 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Fri Jan 17 10:58:45 2025]
+rule all:
+    input: reports/multiqc_report.html, plots/pca.pdf, plots/pca.png, plots/volcano.png
+    output: reports/snakemake-report.html
+    jobid: 0
+    reason: Input files updated by another job: plots/volcano.png, plots/pca.png, plots/pca.pdf
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+snakemake --report reports/snakemake-report.html
+Submitted job 0 with external jobid '114712'.
+[Fri Jan 17 10:58:55 2025]
+Finished job 0.
+2 of 2 steps (100%) done
+Complete log: .snakemake/log/2025-01-17T105815.774967.snakemake.log
