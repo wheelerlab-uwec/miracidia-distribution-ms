@@ -1,0 +1,172 @@
+Using profile snakemake-profile/ for setting default command line arguments.
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided remote nodes: 500
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+count                    1
+dedup                    1
+diffexp                  1
+multiqc                  1
+qualimap_bam             1
+qualimap_rnaseq          1
+star_second_align        1
+total                    8
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Wed Dec 11 16:49:06 2024]
+rule star_second_align:
+    input: fastq/trimmed/Int-02_S43_L005_R1_001.fastq.gz, fastq/trimmed/Int-02_S43_L005_R2_001.fastq.gz, genome/star, alignment/star_one/Int-01_S42_L005/SJ.out.tab, alignment/star_one/Int-02_S43_L005/SJ.out.tab, alignment/star_one/Int-03_S44_L005/SJ.out.tab, alignment/star_one/Int-04_S45_L005/SJ.out.tab, alignment/star_one/Liv-01_S38_L005/SJ.out.tab, alignment/star_one/Liv-02_S39_L005/SJ.out.tab, alignment/star_one/Liv-03_S40_L005/SJ.out.tab, alignment/star_one/Liv-04_S41_L005/SJ.out.tab
+    output: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam, alignment/star_two/Int-02_S43_L005/Log.final.out
+    jobid: 72
+    reason: Missing output files: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam, alignment/star_two/Int-02_S43_L005/Log.final.out; Updated input files: alignment/star_one/Liv-03_S40_L005/SJ.out.tab, alignment/star_one/Int-02_S43_L005/SJ.out.tab, alignment/star_one/Liv-02_S39_L005/SJ.out.tab, alignment/star_one/Int-01_S42_L005/SJ.out.tab, alignment/star_one/Liv-04_S41_L005/SJ.out.tab, genome/star, alignment/star_one/Int-03_S44_L005/SJ.out.tab, alignment/star_one/Int-04_S45_L005/SJ.out.tab, alignment/star_one/Liv-01_S38_L005/SJ.out.tab
+    wildcards: sample=Int-02_S43_L005
+    threads: 16
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=29829, disk_mib=28448, tmpdir=<TBD>, partition=week
+
+
+        STAR         --runThreadN 16         --runMode alignReads         --genomeDir genome/star         --readFilesIn fastq/trimmed/Int-02_S43_L005_R1_001.fastq.gz, fastq/trimmed/Int-02_S43_L005_R2_001.fastq.gz,         --readFilesCommand zcat         --outSAMtype BAM SortedByCoordinate         --outSAMunmapped Within         --outFileNamePrefix alignment/star_two/Int-02_S43_L005/         --outSAMattributes NH HI AS nM RG         --outSAMattrRGline ID:Int-02_S43_L005 SM:Int-02_S43_L005         --sjdbFileChrStartEnd alignment/star_one/Int-01_S42_L005/ alignment/star_one/Int-02_S43_L005/ alignment/star_one/Int-03_S44_L005/ alignment/star_one/Int-04_S45_L005/ alignment/star_one/Liv-01_S38_L005/ alignment/star_one/Liv-02_S39_L005/ alignment/star_one/Liv-03_S40_L005/ alignment/star_one/Liv-04_S41_L005/
+        
+Submitted job 72 with external jobid '111700'.
+[Wed Dec 11 21:46:52 2024]
+Finished job 72.
+1 of 8 steps (12%) done
+Select jobs to execute...
+Execute 3 jobs...
+
+[Wed Dec 11 21:46:52 2024]
+rule qualimap_rnaseq:
+    input: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam, genome/annotations.gtf
+    output: qualimap/star/rnaseq/Int-02_S43_L005
+    jobid: 88
+    reason: Input files updated by another job: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam
+    wildcards: sample=Int-02_S43_L005
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=31655, disk_mib=30189, tmpdir=<TBD>, partition=week
+
+qualimap rnaseq -outdir qualimap/star/rnaseq/Int-02_S43_L005 -bam alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam -gtf genome/annotations.gtf -p strand-specific-forward
+Submitted job 88 with external jobid '111760'.
+
+[Wed Dec 11 21:46:52 2024]
+rule dedup:
+    input: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam
+    output: dedup/star/Int-02_S43_L005.bam, logs/picard/Int-02_S43_L005.log
+    jobid: 96
+    reason: Input files updated by another job: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam
+    wildcards: sample=Int-02_S43_L005
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=31522, disk_mib=30062, tmpdir=<TBD>, partition=week
+
+picard MarkDuplicates -I alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam -O dedup/star/Int-02_S43_L005.bam -M logs/picard/Int-02_S43_L005.log --VALIDATION_STRINGENCY SILENT
+Submitted job 96 with external jobid '111761'.
+
+[Wed Dec 11 21:46:52 2024]
+rule qualimap_bam:
+    input: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam, genome/annotations.gtf
+    output: qualimap/star/bam/Int-02_S43_L005
+    jobid: 80
+    reason: Input files updated by another job: alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam
+    wildcards: sample=Int-02_S43_L005
+    threads: 16
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=31655, disk_mib=30189, tmpdir=<TBD>, partition=week
+
+qualimap bamqc -nt 16 -outdir qualimap/star/bam/Int-02_S43_L005 -bam alignment/star_two/Int-02_S43_L005/Aligned.sortedByCoord.out.bam --feature-file genome/annotations.gtf -p strand-specific-forward
+Submitted job 80 with external jobid '111762'.
+[Wed Dec 11 21:54:02 2024]
+Finished job 88.
+2 of 8 steps (25%) done
+[Wed Dec 11 21:54:04 2024]
+Finished job 80.
+3 of 8 steps (38%) done
+[Wed Dec 11 22:35:07 2024]
+Finished job 96.
+4 of 8 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Wed Dec 11 22:35:07 2024]
+rule count:
+    input: dedup/star/Int-01_S42_L005.bam, dedup/star/Int-02_S43_L005.bam, dedup/star/Int-03_S44_L005.bam, dedup/star/Int-04_S45_L005.bam, dedup/star/Liv-01_S38_L005.bam, dedup/star/Liv-02_S39_L005.bam, dedup/star/Liv-03_S40_L005.bam, dedup/star/Liv-04_S41_L005.bam, genome/annotations.gtf
+    output: counts/star/counts.tsv, counts/star/counts.tsv.summary
+    jobid: 103
+    reason: Input files updated by another job: dedup/star/Int-02_S43_L005.bam
+    threads: 32
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=262655, disk_mib=250488, tmpdir=<TBD>, partition=week
+
+
+        featureCounts         dedup/star/Int-01_S42_L005.bam dedup/star/Int-02_S43_L005.bam dedup/star/Int-03_S44_L005.bam dedup/star/Int-04_S45_L005.bam dedup/star/Liv-01_S38_L005.bam dedup/star/Liv-02_S39_L005.bam dedup/star/Liv-03_S40_L005.bam dedup/star/Liv-04_S41_L005.bam         -a genome/annotations.gtf         -o counts/star/counts.tsv         -T 32         -p         --countReadPairs         -C         --ignoreDup         -M         --fraction         --byReadGroup
+        
+Submitted job 103 with external jobid '111771'.
+[Wed Dec 11 22:39:07 2024]
+Finished job 103.
+5 of 8 steps (62%) done
+Select jobs to execute...
+Execute 2 jobs...
+
+[Wed Dec 11 22:39:08 2024]
+rule multiqc:
+    input: fastq/pe/qc/Int-01_S42_L005_R1_001_fastqc.zip, fastq/pe/qc/Int-01_S42_L005_R2_001_fastqc.zip, fastq/pe/qc/Int-02_S43_L005_R1_001_fastqc.zip, fastq/pe/qc/Int-02_S43_L005_R2_001_fastqc.zip, fastq/pe/qc/Int-03_S44_L005_R1_001_fastqc.zip, fastq/pe/qc/Int-03_S44_L005_R2_001_fastqc.zip, fastq/pe/qc/Int-04_S45_L005_R1_001_fastqc.zip, fastq/pe/qc/Int-04_S45_L005_R2_001_fastqc.zip, fastq/pe/qc/Liv-01_S38_L005_R1_001_fastqc.zip, fastq/pe/qc/Liv-01_S38_L005_R2_001_fastqc.zip, fastq/pe/qc/Liv-02_S39_L005_R1_001_fastqc.zip, fastq/pe/qc/Liv-02_S39_L005_R2_001_fastqc.zip, fastq/pe/qc/Liv-03_S40_L005_R1_001_fastqc.zip, fastq/pe/qc/Liv-03_S40_L005_R2_001_fastqc.zip, fastq/pe/qc/Liv-04_S41_L005_R1_001_fastqc.zip, fastq/pe/qc/Liv-04_S41_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Int-01_S42_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Int-01_S42_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Int-02_S43_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Int-02_S43_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Int-03_S44_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Int-03_S44_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Int-04_S45_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Int-04_S45_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Liv-01_S38_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Liv-01_S38_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Liv-02_S39_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Liv-02_S39_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Liv-03_S40_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Liv-03_S40_L005_R2_001_fastqc.zip, fastq/trimmed/qc/Liv-04_S41_L005_R1_001_fastqc.zip, fastq/trimmed/qc/Liv-04_S41_L005_R2_001_fastqc.zip, alignment/star_two/Int-01_S42_L005/Log.final.out, alignment/star_two/Int-02_S43_L005/Log.final.out, alignment/star_two/Int-03_S44_L005/Log.final.out, alignment/star_two/Int-04_S45_L005/Log.final.out, alignment/star_two/Liv-01_S38_L005/Log.final.out, alignment/star_two/Liv-02_S39_L005/Log.final.out, alignment/star_two/Liv-03_S40_L005/Log.final.out, alignment/star_two/Liv-04_S41_L005/Log.final.out, qualimap/star/bam/Int-01_S42_L005, qualimap/star/bam/Int-02_S43_L005, qualimap/star/bam/Int-03_S44_L005, qualimap/star/bam/Int-04_S45_L005, qualimap/star/bam/Liv-01_S38_L005, qualimap/star/bam/Liv-02_S39_L005, qualimap/star/bam/Liv-03_S40_L005, qualimap/star/bam/Liv-04_S41_L005, qualimap/star/rnaseq/Int-01_S42_L005, qualimap/star/rnaseq/Int-02_S43_L005, qualimap/star/rnaseq/Int-03_S44_L005, qualimap/star/rnaseq/Int-04_S45_L005, qualimap/star/rnaseq/Liv-01_S38_L005, qualimap/star/rnaseq/Liv-02_S39_L005, qualimap/star/rnaseq/Liv-03_S40_L005, qualimap/star/rnaseq/Liv-04_S41_L005, logs/picard/Int-01_S42_L005.log, logs/picard/Int-02_S43_L005.log, logs/picard/Int-03_S44_L005.log, logs/picard/Int-04_S45_L005.log, logs/picard/Liv-01_S38_L005.log, logs/picard/Liv-02_S39_L005.log, logs/picard/Liv-03_S40_L005.log, logs/picard/Liv-04_S41_L005.log, counts/star/counts.tsv.summary
+    output: reports/multiqc_report.html
+    jobid: 1
+    reason: Input files updated by another job: qualimap/star/bam/Int-02_S43_L005, alignment/star_two/Int-02_S43_L005/Log.final.out, logs/picard/Int-02_S43_L005.log, counts/star/counts.tsv.summary, qualimap/star/rnaseq/Int-02_S43_L005
+    threads: 16
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+multiqc --outdir reports/ --force -d .
+Submitted job 1 with external jobid '111772'.
+
+[Wed Dec 11 22:39:08 2024]
+rule diffexp:
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    jobid: 104
+    reason: Input files updated by another job: counts/star/counts.tsv
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+Rscript counts/star/counts.tsv
+Submitted job 104 with external jobid '111773'.
+[Wed Dec 11 22:39:40 2024]
+Error in rule diffexp:
+    message: For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 104
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    shell:
+        Rscript counts/star/counts.tsv
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    external_jobid: 111773
+
+Trying to restart job 104.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Wed Dec 11 22:39:40 2024]
+rule diffexp:
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    jobid: 104
+    reason: Input files updated by another job: counts/star/counts.tsv
+    resources: mem_mb=64000, mem_mib=61036, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, partition=week
+
+Rscript counts/star/counts.tsv
+Submitted job 104 with external jobid '111774'.
+[Wed Dec 11 22:39:51 2024]
+Error in rule diffexp:
+    message: For further error details see the cluster/cloud log and the log files of the involved rule(s).
+    jobid: 104
+    input: counts/star/counts.tsv
+    output: plots/pca.pdf, plots/pca.png, plots/volcano.png
+    shell:
+        Rscript counts/star/counts.tsv
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+    external_jobid: 111774
+
+[Wed Dec 11 22:40:01 2024]
+Finished job 1.
+6 of 8 steps (75%) done
+Exiting because a job execution failed. Look above for error message
+Complete log: .snakemake/log/2024-12-11T164906.459559.snakemake.log
+WorkflowError:
+At least one job did not complete successfully.

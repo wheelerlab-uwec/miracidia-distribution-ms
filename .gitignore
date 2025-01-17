@@ -2,6 +2,10 @@ pipeline/fastq/
 pipeline/.snakemake/
 pipeline/logs/
 pipeline/reports/
+pipeline/alignment/
+pipeline/dedup/
+pipeline/genome/
+pipeline/qualimap/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
