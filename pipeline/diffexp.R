@@ -6,6 +6,7 @@ library(DESeq2)
 args <- commandArgs(trailingOnly = TRUE)
 
 input_file <- args[1]
+input_file <- '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/counts/star/counts.tsv'
 
 counts_df <- read_tsv(input_file,
                       comment = "#") |>
@@ -106,9 +107,11 @@ volcano_plot <- volcano_data |>
 
 ggsave('plots/volcano.png', volcano_plot, bg = 'white', width = 6, height = 6)
 
+write_csv(volcano_data, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_results/deseq_results.csv')
 
-
-
+norm_counts <- counts(dds, normalized = TRUE) |>
+  as_tibble(rownames = 'gene_id')
+write_csv(norm_counts, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_results/deseq_norm_counts.csv')
 
 
 
