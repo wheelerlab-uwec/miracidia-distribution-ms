@@ -90,19 +90,26 @@ ggsave('plots/pca.png', pca_plot, width = 4, height = 4)
 ###### Diff Exp
 
 volcano_data <- as_tibble(res, rownames = 'gene_id')
+
 degs <- volcano_data |>
-    filter(log2FoldChange > 2 | log2FoldChange < -2, 
-           -log10(padj) > -log10(.05))
+    filter(log2FoldChange > 2 | log2FoldChange < -2,
+            -log10(padj) > -log10(0.05))
 
 volcano_plot <- volcano_data |> 
+    mutate(color = case_when(
+        log2FoldChange > 1  & padj < 0.05 | log2FoldChange < -1 & padj < 0.05 ~ 'deg',
+        TRUE ~ 'not deg'
+    )) |> 
     ggplot(aes(x = log2FoldChange, y = -log10(padj))) +
-    geom_point() +
+    geom_point(aes(color = color),
+        size = 5) +
     geom_label_repel(data = degs,
                      aes(x = log2FoldChange, y = -log10(padj), label = gene_id),
                      max.overlaps = 50, size = 1) +
     geom_hline(yintercept = -log10(0.05)) +
-    geom_vline(xintercept = 2) +
-    geom_vline(xintercept = -2) +
+    geom_vline(xintercept = 1) +
+    geom_vline(xintercept = -1) + 
+    scale_color_manual(values = c('#EBB6B3', '#334139')) +
     theme_minimal()
 
 ggsave('plots/volcano.png', volcano_plot, bg = 'white', width = 6, height = 6)
@@ -112,8 +119,6 @@ write_csv(volcano_data, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_
 norm_counts <- counts(dds, normalized = TRUE) |>
   as_tibble(rownames = 'gene_id')
 write_csv(norm_counts, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_results/deseq_norm_counts.csv')
-
-
 
 
 
