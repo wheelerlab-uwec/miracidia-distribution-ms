@@ -101,8 +101,7 @@ volcano_plot <- volcano_data |>
         TRUE ~ 'not deg'
     )) |> 
     ggplot(aes(x = log2FoldChange, y = -log10(padj))) +
-    geom_point(aes(color = color),
-        size = 5) +
+    geom_point(aes(color = color)) +
     geom_label_repel(data = degs,
                      aes(x = log2FoldChange, y = -log10(padj), label = gene_id),
                      max.overlaps = 50, size = 1) +
@@ -112,7 +111,7 @@ volcano_plot <- volcano_data |>
     scale_color_manual(values = c('#EBB6B3', '#334139')) +
     theme_minimal()
 
-ggsave('plots/volcano.png', volcano_plot, bg = 'white', width = 6, height = 6)
+ggsave('pipeline/plots/volcano.png', volcano_plot, bg = 'white', width = 6, height = 6)
 
 write_csv(volcano_data, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_results/deseq_results.csv')
 
