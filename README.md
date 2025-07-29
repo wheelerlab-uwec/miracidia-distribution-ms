@@ -1,3 +1,3 @@
 # Sm_Mira_IvT
 
-Code associated with RNA-seq analysis from _Schistosoma mansoni_ miracidia.
+Data and code associated with Willett and Olson et al. 2025.
