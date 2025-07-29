@@ -2,11 +2,13 @@ library(tidyverse)
 library(broom)
 library(ggrepel)
 library(DESeq2)
+library(ggtext)
+library(cowplot)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 input_file <- args[1]
-input_file <- '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/counts/star/counts.tsv'
+# input_file <- '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/counts/star/counts.tsv'
 
 counts_df <- read_tsv(input_file,
                       comment = "#") |>
@@ -66,50 +68,73 @@ vsd <- vst(dds)
 
 pca_fit <- t(assay(vsd)) |> 
   prcomp(scale = TRUE)
-pca_fit
+# pca_fit
 
 (pca_plot <- pca_fit |>
   augment(t(assay(vsd))) |>
   dplyr::rename(sample = .rownames) |>
   separate(sample, into = c('tissue', 'rep'), sep = '-') |>
-    mutate(tissue = case_when(
-    tissue == 'Int' ~ 'Intestine',
-    tissue == 'Liv' ~ 'Liver'
-  )) |>
-  ggplot(aes(x = .fittedPC1, y = .fittedPC2, color = tissue, shape = tissue)) + 
-  geom_point(size = 4) +
+    mutate(
+      tissue = case_when(
+        tissue == 'Int' ~ 'Intestine',
+        tissue == 'Liv' ~ 'Liver'
+  ),
+      rep = str_remove(rep, "_.*")) |>
+  ggplot(aes(x = .fittedPC1, y = .fittedPC2, color = tissue)) + 
+  geom_point(aes(shape = as.factor(rep)), size = 4, show.legend = FALSE) +
+  stat_ellipse(type = "norm", level = 0.68) + # 1 SD
   scale_color_manual(values = c('indianred', 'steelblue')) +
-  labs(x = "PC1 (29% of variance)", y = "PC2 (23% of variance)", color = "Tissue source", shape = "Tissue source") +
-  theme_minimal() +
+  scale_shape_manual(values = c(15, 16, 17, 18)) +
+  labs(x = "PC1", y = "PC2", color = "Tissue source", shape = "Replicate") +
+  cowplot::theme_half_open() +
+  theme(
+    axis.text.x = element_markdown(size = 8),
+    axis.text.y = element_markdown(size = 8),
+    axis.title = element_text(size = 9),
+    legend.title = element_text(size = 9),
+    legend.text = element_markdown(size = 8),
+    legend.position = 'bottom'
+  ) +
   NULL
 )
 
-ggsave('plots/pca.pdf', pca_plot, width = 4, height = 4)
-ggsave('plots/pca.png', pca_plot, width = 4, height = 4)
+ggsave('pipeline/plots/pca.pdf', pca_plot, width = 6, height = 6)
+ggsave('pipeline/plots/pca.png', pca_plot, width = 6, height = 6, bg = 'white')
 
 ###### Diff Exp
 
 volcano_data <- as_tibble(res, rownames = 'gene_id')
 
 degs <- volcano_data |>
-    filter(log2FoldChange > 2 | log2FoldChange < -2,
-            -log10(padj) > -log10(0.05))
+    filter(abs(log2FoldChange) > 1,
+           padj < 0.05)
 
-volcano_plot <- volcano_data |> 
+(volcano_plot <- volcano_data |> 
     mutate(color = case_when(
         log2FoldChange > 1  & padj < 0.05 | log2FoldChange < -1 & padj < 0.05 ~ 'deg',
         TRUE ~ 'not deg'
     )) |> 
     ggplot(aes(x = log2FoldChange, y = -log10(padj))) +
-    geom_point(aes(color = color)) +
-    geom_label_repel(data = degs,
-                     aes(x = log2FoldChange, y = -log10(padj), label = gene_id),
-                     max.overlaps = 50, size = 1) +
-    geom_hline(yintercept = -log10(0.05)) +
-    geom_vline(xintercept = 1) +
-    geom_vline(xintercept = -1) + 
+    geom_point(aes(color = color),
+      alpha = 0.5,
+      show.legend = FALSE) +
+    # geom_label_repel(data = degs,
+    #                  aes(x = log2FoldChange, y = -log10(padj), label = gene_id),
+    #                  max.overlaps = 50, size = 1) +
+    geom_hline(yintercept = -log10(0.05), linetype = 'dashed') +
+    geom_vline(xintercept = 1, linetype = 'dashed') +
+    geom_vline(xintercept = -1, linetype = 'dashed') + 
+    labs(x = "log<sub>2</sub>(Fold change)", y = '-log<sub>10</sub>(Adjusted p-value)') +
     scale_color_manual(values = c('#EBB6B3', '#334139')) +
-    theme_minimal()
+    cowplot::theme_half_open() +
+    theme(
+      axis.title = element_markdown(size = 9),
+      axis.text.x = element_markdown(size = 8),
+      axis.text.y = element_markdown(size = 8),
+      legend.position = 'bottom'
+    ) + 
+  NULL
+)
 
 ggsave('pipeline/plots/volcano.png', volcano_plot, bg = 'white', width = 6, height = 6)
 
@@ -119,24 +144,28 @@ norm_counts <- counts(dds, normalized = TRUE) |>
   as_tibble(rownames = 'gene_id')
 write_csv(norm_counts, '/data/users/wheelenj/GitHub/Sm_Mira_IvT/pipeline/deseq_results/deseq_norm_counts.csv')
 
+fig1 <- plot_grid(
+  pca_plot, volcano_plot,
+  align = 'h',
+  axis = 'tb',
+  labels = c('A', 'B')
+)
+
+save_plot('Fig1/Fig1.pdf', fig1,
+          base_width = 6, base_height = 3)
+
+###### comparison to eggs
+
+egg_degs <- read_tsv('Fig1/egg_degs.tsv') |>
+  select(gene_id = Gene, padj,  log2FoldChange) |>
+  filter(abs(log2FoldChange) > 1, padj < 0.05)
 
 
+mira_degs <- degs |>
+  mutate(
+    shared = case_when(
+      gene_id %in% egg_degs$gene_id ~ TRUE,
+      TRUE ~ FALSE
+  )) |>
+  write_csv("Fig1/Table1.csv")
 
-
-
-
-
-
-# vsd_dists <- dist(t(assay(vsd)))
-
-# vsd_dists_df <- as.matrix(vsd_dists) |>
-#     as_tibble(rownames = 'sample')
-
-# vsd_dist_plot <- vsd_dists_df |>
-#     pivot_longer(-sample, names_to = 'comp', values_to = 'dist') |>
-#     ggplot(aes(x = sample, y = comp, fill = dist)) +
-#     geom_tile() +
-#     scale_fill_viridis_c() +
-#     coord_equal() +
-#     NULL
-# vsd_dist_plot
