@@ -107,23 +107,29 @@ save_plot(
   base_width = 6
 )
 
-long_chunked <- long_filtered |>
-  group_by(video, particle) |>
-  group_split() |>
-  map_dfr(~ split_trajectory(.x, frame_rate = 15, chunk_duration_sec = 5))
-
-lnest_cols <- c("date", "video", "particle", "subparticle")
-long_nested <- quick_nest(long_chunked, nest_cols)
-
-long_subtrack_summary <- calculate_track_features_parallel(
-  long_nested,
-  fps = 15,
-  chunk_size = 1000
+save_plot(
+  here("Fig4", "Fig4.png"),
+  attrition_plot,
+  base_height = 4,
+  base_width = 6,
+  bg = 'white'
 )
 
-write_rds(long_subtrack_summary, here("long_subtrack_summary.rds"))
+# long_chunked <- long_filtered |>
+#   group_by(video, particle) |>
+#   group_split() |>
+#   map_dfr(~ split_trajectory(.x, frame_rate = 15, chunk_duration_sec = 5))
 
-long_subtrack_summary <- read_rds(here('long_subtrack_summary.rds')) |>
+# lnest_cols <- c("date", "video", "particle", "subparticle")
+# long_nested <- quick_nest(long_chunked, nest_cols)
+
+# long_subtrack_summary <- calculate_track_features_parallel(
+#   long_nested,
+#   fps = 15,
+#   chunk_size = 1000
+# )
+
+long_subtrack_summary <- read_rds(here('Fig4', 'long_subtrack_summary.rds')) |>
   mutate(
     date = str_extract(video, "2025[0-9]{4}"),
     camera = str_extract(video, "[0-9]{8}$"),

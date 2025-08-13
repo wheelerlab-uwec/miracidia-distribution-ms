@@ -146,21 +146,21 @@ feature_cols <- subtrack_summary %>%
   select_if(is.numeric) %>%
   names()
 
-model_results_list <- map(
-  feature_cols,
-  ~ fit_model_interaction(
-    .x,
-    subtrack_summary,
-    fixed_effects = c("tissue", "frame_start"),
-    use_temporal_correlation = TRUE
-  )
-)
+# model_results_list <- map(
+#   feature_cols,
+#   ~ fit_model_interaction(
+#     .x,
+#     subtrack_summary,
+#     fixed_effects = c("tissue", "frame_start"),
+#     use_temporal_correlation = TRUE
+#   )
+# )
 
-names(model_results_list) <- feature_cols
+# names(model_results_list) <- feature_cols
 
-# Extract the results
-results <- map_dfr(model_results_list, ~ .x$results) |>
-  filter(str_detect(term, "tissue"))
+# # Extract the results
+# results <- map_dfr(model_results_list, ~ .x$results) |>
+#   filter(str_detect(term, "tissue"))
 
 results <- read_rds(here("Fig3", "model_results.rds"))
 
@@ -280,7 +280,7 @@ feature_labels <- c(
     limits = c(-1, 1),
     palette = "BrBG",
     breaks = c(-1, 0, 1),
-    labels = c("-1\n(Intestine higher)", "0", "1\n(Liver higher)"),
+    labels = c("-1", "0", "1"),
   ) +
   guides(
     fill = guide_colorbar(
@@ -297,11 +297,11 @@ feature_labels <- c(
   theme(
     axis.title = element_markdown(size = 9),
     axis.text.x = element_markdown(size = 8),
-    axis.text.y = element_markdown(size = 6),
+    axis.text.y = element_markdown(size = 7),
     legend.title = element_text(size = 9, hjust = 0.5),
     legend.text = element_text(size = 8),
     legend.position = "bottom",
-    # legend.title.position = "top",
+    legend.title.position = "top",
     # plot.margin = margin(5, 5, 5, 20),
     # legend.box.margin = margin(0, 0, 0, -120),
     strip.text = element_markdown(size = 8),
@@ -314,7 +314,7 @@ feature_labels <- c(
     date,
     tissue,
     frame_start,
-    speed_q50,
+    speed_mean,
     heading_variance
   ) |>
   pivot_longer(
@@ -324,9 +324,13 @@ feature_labels <- c(
   ) |>
   mutate(
     feature = case_when(
-      feature == "speed_q50" ~ "Speed (50th percentile)", # both diff, liver higher
+      feature == "speed_mean" ~ "Mean speed", # fixed diff, liver higher
       feature == "heading_variance" ~ "Heading variance", # fixed diff, intestine higher
       TRUE ~ feature
+    ),
+    value = case_when(
+      feature == "speed_mean" ~ value / 126.5, # scale to mm/s
+      TRUE ~ value
     )
   ) |>
   ggplot(aes(x = frame_start / 15 / 60, y = value, color = tissue)) +
@@ -352,12 +356,8 @@ feature_labels <- c(
 
 ## behavioral profiles ------------------------------------------------------------
 
-# Extract the model objects
-models_list <- map(model_results_list, ~ .x$model)
-names(models_list) <- feature_cols
-
 sample_summary <- subtrack_summary %>%
-  group_by(date, video) %>% # Assuming date/video combination = sample
+  group_by(date, video) %>%
   summarise(
     n_tracks = n_distinct(particle),
     tissue = first(tissue),
@@ -365,7 +365,7 @@ sample_summary <- subtrack_summary %>%
   ) %>%
   mutate(sample_id = paste(date, video, sep = "_"))
 
-create_biological_sample_profiles <- function(data, models_list, feature_cols) {
+create_biological_sample_profiles <- function(data, feature_cols) {
   cat("Creating biological sample profiles (date-tissue combinations)...\n")
 
   # Simple aggregation across technical replicates (videos)
@@ -408,7 +408,7 @@ create_biological_sample_profiles <- function(data, models_list, feature_cols) {
   return(sample_profiles)
 }
 
-sample_profiles <- create_biological_sample_profiles(subtrack_summary, models_list, feature_cols)
+sample_profiles <- create_biological_sample_profiles(subtrack_summary, feature_cols)
 
 behavioral_matrix <- sample_profiles %>%
   select(all_of(feature_cols)) %>%
@@ -417,7 +417,6 @@ behavioral_matrix <- sample_profiles %>%
 rownames(behavioral_matrix) <- sample_profiles$sample_id
 
 pca_result <- prcomp(behavioral_matrix, center = TRUE, scale. = TRUE)
-summary(pca_result)
 
 pca_coords <- tibble(
   sample_id = rownames(pca_result$x),
@@ -431,6 +430,7 @@ var_explained <- summary(pca_result)$importance[2, ] * 100
 
 (pca_plot <- ggplot(pca_coords, aes(x = PC1, y = PC2, color = tissue)) +
   geom_point(aes(shape = date, fill = tissue), size = 4, show.legend = FALSE) +
+  # geom_text(aes(label = date)) +
   stat_ellipse(type = "norm", level = 0.68) + # 1 SD
   scale_color_manual(
     values = c("intestine" = "indianred", "liver" = "steelblue"),
@@ -459,22 +459,110 @@ var_explained <- summary(pca_result)$importance[2, ] * 100
   NULL)
 
 
+example_tracks <- filtered |>
+  filter(
+    date == "20250717",
+    str_detect(video, "24568744|25128038")
+  ) |>
+  mutate(
+    camera = str_extract(video, "[0-9]{8}$"),
+    tissue = case_when(
+      camera %in% c("24568709", "24568744") ~ "intestine",
+      camera %in% c("25128038", "25112214") ~ "liver"
+    ),
+    .before = particle
+  )
+
+example_summary <- example_tracks |>
+  group_by(camera, tissue, particle) |>
+  arrange(frame) |>
+  summarise(
+    n_frames = n(),
+    chord = sqrt((last(x) - first(x))^2 + (last(y) - first(y))^2)
+  ) |>
+  group_by(camera, tissue) |>
+  slice_max(chord, n = 75)
+
+(ex_track_plot <- example_summary |>
+  left_join(example_tracks) |>
+  left_join(
+    distinct(select(
+      ungroup(subtrack_summary),
+      video,
+      particle,
+      tissue,
+      frame = frame_start,
+      speed_mean,
+      heading_variance
+    ))
+  ) |>
+  fill(speed_mean, heading_variance, .direction = "down") |>
+  ggplot() +
+  geom_path(
+    aes(x = x, y = y, group = particle, color = speed_mean / 126.5), # 126.5 px/s
+    linewidth = 1
+  ) +
+  scico::scale_color_scico(
+    palette = "batlow",
+  ) +
+  scale_x_continuous(
+    breaks = seq(min(filtered$x), max(filtered$x), length.out = 5),
+    expand = c(0, 0),
+    labels = c("", "6.75", "13.5", "20.25", "27")
+  ) +
+  scale_y_continuous(
+    breaks = seq(min(filtered$y), max(filtered$y), length.out = 5),
+    expand = c(0, 0),
+    labels = c("", "6.75", "13.5", "20.25", "27")
+  ) +
+  facet_wrap(
+    nrow = 2,
+    facets = vars(tissue),
+    scales = "free",
+    labeller = labeller(tissue = c("intestine" = "Intestine", "liver" = "Liver"))
+  ) +
+  labs(x = "X (mm)", y = "Y (mm)", color = "Mean speed (mm/s)") +
+  theme_half_open() +
+  theme(
+    aspect.ratio = 1,
+    axis.title = element_markdown(size = 9),
+    axis.text.x = element_markdown(size = 8),
+    axis.text.y = element_markdown(size = 7.5),
+    legend.title = element_text(size = 9, hjust = 0.5),
+    legend.text = element_text(size = 8),
+    legend.position = "bottom",
+    legend.title.position = "top",
+    # plot.margin = margin(5, 5, 5, 20),
+    # legend.box.margin = margin(0, 0, 0, -120),
+    strip.text = element_markdown(size = 8),
+  ) +
+  NULL)
+
 top <- plot_grid(
   results_plot,
-  pca_plot,
+  ex_track_plot,
   ncol = 2,
   align = "h",
-  axis = "b",
+  axis = 'b',
   rel_widths = c(1.4, 1),
   labels = c("A", "B")
 )
 
+bottom <- plot_grid(
+  pca_plot,
+  feature_plot,
+  ncol = 2,
+  align = "h",
+  axis = "b",
+  rel_widths = c(1, 2),
+  labels = c("C", "D")
+)
+
 final_plot <- plot_grid(
   top,
-  feature_plot,
+  bottom,
   ncol = 1,
-  rel_heights = c(2, 1),
-  labels = c("", "C")
+  rel_heights = c(2, 1.25)
 )
 
 save_plot(
@@ -482,4 +570,12 @@ save_plot(
   final_plot,
   base_width = 6.5,
   base_height = 8
+)
+
+save_plot(
+  here("Fig3", "Fig3.png"),
+  final_plot,
+  base_width = 6.5,
+  base_height = 8,
+  bg = 'white'
 )

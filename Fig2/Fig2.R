@@ -21,7 +21,7 @@ df_area <- ggplot(measurements, aes(x = tissue, y = area_1_blue_um2, fill = tiss
   geom_quasirandom(color = "black", size = 2, alpha = 0.6) +
   stat_summary(geom = 'point', fun = mean, size = 3, color = 'grey', shape = 'triangle') +
   theme_minimal() +
-  scale_fill_manual(values = c("Liver" = "indianred", "Intestine" = "steelblue")) +
+  scale_fill_manual(values = c("Liver" = "steelblue", "Intestine" = "indianred")) +
   stat_compare_means(method = 't.test', size = 3, label.x.npc = .5, hjust = 0.5) +
   labs(x = "Tissue source", y = "Miracidia area (µm²)") +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
@@ -34,7 +34,7 @@ df_length <- ggplot(measurements, aes(x = tissue, y = length_1_blue_um, fill = t
   geom_quasirandom(color = "black", size = 2, alpha = 0.6) +
   stat_summary(geom = 'point', fun = mean, size = 3, color = 'grey', shape = 'triangle') +
   theme_minimal() +
-  scale_fill_manual(values = c("Liver" = "indianred", "Intestine" = "steelblue")) +
+  scale_fill_manual(values = c("Liver" = "steelblue", "Intestine" = "indianred")) +
   stat_compare_means(method = 't.test', size = 3, label.x.npc = .5, hjust = 0.5) +
   labs(x = "Tissue source", y = "Miracidia length (µm)") +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
@@ -43,6 +43,7 @@ combined_plot <- plot_grid(df_area, df_length, labels = c("A", "B"), ncol = 2)
 combined_plot
 
 save_plot(here("Fig2", "Fig2.pdf"), combined_plot, base_height = 4, base_width = 6.5)
+save_plot(here("Fig2", "Fig2.png"), combined_plot, base_height = 4, base_width = 6.5, bg = 'white')
 
 #---------------Summary---------------
 
