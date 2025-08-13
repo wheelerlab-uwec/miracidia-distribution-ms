@@ -1,3 +1,7 @@
+# **/*summary.rds
+# **/*filtered.rds
+
+
 pipeline/fastq/
 pipeline/.snakemake/
 pipeline/logs/
