@@ -54,54 +54,6 @@ half_arena_tracks <- track_summary |>
     sd_x > 5 & sd_y > 5
   )
 
-# plot the tracks
-track_plot <- half_arena_tracks |>
-  # remove vidoes without tracks
-  filter(case_when(
-    date == '20250529' & camera == '24568744' ~ FALSE,
-    date == '20250626' & camera == '25112214' ~ FALSE,
-    date == '20250703' & camera == '24568744' ~ FALSE,
-    date == '20250703' & camera == '25112214' ~ FALSE,
-    date == '20250717' & camera == '24568709' ~ FALSE,
-    TRUE ~ TRUE
-  )) |>
-  ggplot() +
-  geom_path(
-    aes(x = x, y = y, group = particle, color = frame),
-    linewidth = 0.1
-  ) +
-  facet_wrap(
-    nrow = 2,
-    facets = vars(date, camera, tissue),
-    scales = "free_y"
-  ) +
-  scale_color_viridis_c(option = 'mako') +
-  scale_x_continuous(
-    breaks = seq(
-      min(half_arena_tracks$x),
-      max(half_arena_tracks$x),
-      length.out = 5
-    ),
-    expand = c(0, 0),
-    labels = c("0", "9.125", "18.25", "27.375", "36.5")
-  ) +
-  theme_void() +
-  theme(
-    aspect.ratio = 1,
-    legend.position = "right",
-    axis.text.y = element_blank(),
-    axis.title.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    strip.text = element_markdown()
-  )
-
-save_plot(
-  here("Fig3", "SuppFig1.pdf"),
-  track_plot,
-  base_height = 8,
-  base_width = 12
-)
-
 # subtrack analysis ------------------------------------------------------
 
 # chunked_data <- filtered |>
@@ -498,9 +450,10 @@ example_summary <- example_tracks |>
   ) |>
   fill(speed_mean, heading_variance, .direction = "down") |>
   ggplot() +
-  geom_path(
+  geom_point(
     aes(x = x, y = y, group = particle, color = speed_mean / 126.5), # 126.5 px/s
-    linewidth = 1
+    size = 0.01,
+    shape = 20
   ) +
   scico::scale_color_scico(
     palette = "batlow",
@@ -549,12 +502,12 @@ top <- plot_grid(
 )
 
 bottom <- plot_grid(
-  pca_plot,
   feature_plot,
+  pca_plot,
   ncol = 2,
   align = "h",
   axis = "b",
-  rel_widths = c(1, 2),
+  rel_widths = c(2, 1),
   labels = c("C", "D")
 )
 
